@@ -1,16 +1,17 @@
-<h1 align='center'>quart_minify </h1>
-<p align='center'>
-<a href='https://travis-ci.com/AceFire6/quart_minify'><img src='https://travis-ci.com/AceFire6/quart_minify.svg?branch=master'></a><a href='https://coveralls.io/github/AceFire6/quart_minify?branch=master'><img src='https://coveralls.io/repos/github/AceFire6/quart_minify/badge.svg?branch=master' alt='Coverage Status' /></a>
-</p>
-<h3 align='center'>A Quart extension to minify quart response for html, javascript, css and less compilation as well.</h3>
+# quart_minify
+[![Build Status](https://travis-ci.org/AceFire6/quart_minify.svg?branch=master)](https://travis-ci.org/AceFire6/quart_minify)
+[![Coverage Status](https://coveralls.io/repos/github/AceFire6/quart_minify/badge.svg?branch=master)](https://coveralls.io/github/AceFire6/quart_minify?branch=master)
+
+A Quart extension to minify quart response for html, javascript, css and less compilation as well.</h3>
+
 
 ## Install:
 #### - With pip
-> - `pip install quart-minify` <br />
+> - `pip install quart-minify`
 
 #### - From the source:
-> - `git clone https://github.com/AceFire6/quart_minify.git`<br />
-> - `cd quart_minify` <br />
+> - `git clone https://github.com/AceFire6/quart_minify.git`
+> - `cd quart_minify`
 > - `python setup.py install`
 
 ## Setup:
