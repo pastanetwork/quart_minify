@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "quart_minify"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Quart extension to minify quart response for html, javascript, css and less compilation as well."
 authors = ["Mohamed Feddad <mrf345@gmail.com>", "Jethro Muller <git@jethromuller.co.za>"]
 license = "MIT"
