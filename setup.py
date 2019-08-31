@@ -1,39 +1,28 @@
-"""
-Quart-Minify
--------------
+import setuptools
 
-A Quart extension to minify quart response for html,
-javascript, css and less compilation as well.
 
-"""
-from setuptools import setup
+with open("README.md") as readme_file:
+    long_description = readme_file.read()
 
-setup(
+setuptools.setup(
     name="quart-minify",
-    version="0.1.0",
+    version="0.1.1",
+    author="Jethro Muller",
+    author_email="git@jethromuller.co.za",
+    description="Quart extension to minify HTML, CSS, JS, and less",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/AceFire6/quart_minify/",
     download_url="https://github.com/AceFire6/quart_minify/archive/0.1.0.tar.gz",
+    packages=setuptools.find_packages(),
+    python_requires=">=3.7",
     license="MIT",
-    author="Mohamed Feddad <mrf345@gmail.com>, Jethro Muller <git@jethromuller.co.za>",
-    description="flask extension to minify html, css, js and less",
-    long_description=__doc__,
     py_modules=["minify"],
-    packages=["quart_minify"],
     zip_safe=False,
     include_package_data=True,
     platforms="any",
-    keywords=[
-        "quart",
-        "extension",
-        "minifer",
-        "htmlmin",
-        "lesscpy",
-        "jsmin",
-        "html",
-        "js",
-        "less",
-        "css",
-    ],
+    project_urls={"Source": "https://github.com/AceFire6/quart_minify/"},
+    keywords="quart extension minifer htmlmin lesscpy jsmin html js less css",
     classifiers=[
         "Environment :: Web Environment",
         "Intended Audience :: Developers",
@@ -49,11 +38,10 @@ setup(
         "lesscpy>=0.13.0,<0.14.0",
         "quart>=0.10.0,<0.11.0",
     ],
-    test_requires=[
+    tests_require=[
         "pytest>=5.1,<6.0",
         "pytest-asyncio>=0.10.0,<0.11.0",
         "flake8>=3.7,<3.8",
         "flake8-quotes>=2.1,<2.2",
     ],
-    setup_requires=["pytest-runner"],
 )
