@@ -2,16 +2,20 @@ from quart import request
 from lesscpy import compile
 from jsmin import jsmin
 from six import StringIO
-from htmlmin import minify as minifyHtml
+from htmlmin import minify as minify_html
 from hashlib import md5
 
 
 class Minify:
     def __init__(
-        self, app=None,
-        html=True, js=True,
-        cssless=True, cache=True,
-        fail_safe=True, bypass=(),
+        self,
+        app=None,
+        html=True,
+        js=True,
+        cssless=True,
+        cache=True,
+        fail_safe=True,
+        bypass=(),
     ):
         """
         A Quart extension to minify flask response for html,
@@ -32,14 +36,17 @@ class Minify:
         self.bypass = bypass
         self.history = {}  # where cache hash and compiled response stored
         self.hashes = {}  # where the hashes and text will be stored
+
         if self.app is None:
             raise(AttributeError("minify(app=) requires Quart app instance"))
+
         for arg in ['cssless', 'js', 'html', 'cache']:
             if not isinstance(eval(arg), bool):
                 raise(TypeError("minify(" + arg + "=) requires True or False"))
-        self.app.after_request(self.toLoopTag)
 
-    def getHashed(self, text):
+        self.app.after_request(self.to_loop_tag)
+
+    def get_hashed(self, text):
         """ to return text hashed and store it in hashes """
         if text in self.hashes.keys():
             return self.hashes.get(text)
@@ -48,50 +55,56 @@ class Minify:
             self.hashes[text] = hashed
             return hashed
 
-    def storeMinifed(self, css, text, toReplace):
+    def store_minifed(self, css, text, to_replace):
         """ to minify and store in history with hash key """
-        if self.cache and self.getHashed(text) in self.history.keys():
-            return self.history[self.getHashed(text)]
+        if self.cache and self.get_hashed(text) in self.history.keys():
+            return self.history[self.get_hashed(text)]
         else:
             minifed = compile(
-                StringIO(toReplace), minify=True, xminify=True
-            ) if css else jsmin(toReplace).replace('\n', ';')
-            if self.cache and self.getHashed(text) not in self.history.keys():
-                self.history[self.getHashed(text)] = minifed
+                StringIO(to_replace), minify=True, xminify=True
+            ) if css else jsmin(to_replace).replace('\n', ';')
+
+            if self.cache and self.get_hashed(text) not in self.history.keys():
+                self.history[self.get_hashed(text)] = minifed
+
             return minifed
 
-    async def toLoopTag(self, response):
-        if response.content_type == u'text/html; charset=utf-8' and not (
-            request.url_rule.rule in self.bypass
+    async def to_loop_tag(self, response):
+        if (
+            response.content_type == 'text/html; charset=utf-8'
+            and request.url_rule.rule not in self.bypass
         ):
             response.direct_passthrough = False
             text = await response.get_data(raw=False)
+
             for tag in [t for t in [
                 (0, 'style')[self.cssless],
                 (0, 'script')[self.js]
             ] if t != 0]:
-                if '<' + tag + ' type=' in text or '<' + tag + '>' in text:
-                    for i in range(1, len(text.split('<' + tag))):
-                        toReplace = text.split(
-                            '<' + tag, i
+                if f'<{tag} type=' in text or f'<{tag}>' in text:
+                    for i in range(1, len(text.split(f'<{tag}'))):
+                        to_replace = text.split(
+                            f'<{tag}', i
                         )[i].split(
-                            '</' + tag + '>'
+                            f'</{tag}>'
                         )[0].split(
                             '>', 1
                         )[1]
+
                         result = None
                         try:
                             result = text.replace(
-                                toReplace,
-                                self.storeMinifed(
-                                    tag == 'style', text, toReplace)
-                            ) if len(toReplace) > 2 else text
+                                to_replace,
+                                self.store_minifed(tag == 'style', text, to_replace),
+                            ) if len(to_replace) > 2 else text
                             text = result
                         except Exception as e:
                             if self.fail_safe:
                                 text = result or text
                             else:
                                 raise e
-            finalResp = minifyHtml(text) if self.html else text
-            response.set_data(finalResp)
+
+            final_resp = minify_html(text) if self.html else text
+            response.set_data(final_resp)
+
         return response
