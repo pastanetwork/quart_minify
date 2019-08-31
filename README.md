@@ -4,18 +4,17 @@
 
 A Quart extension to minify quart response for html, javascript, css and less compilation as well.</h3>
 
-
 ## Install:
 #### - With pip
-> - `pip install quart-minify`
+- `pip install quart-minify`
 
 #### - From the source:
-> - `git clone https://github.com/AceFire6/quart_minify.git`
-> - `cd quart_minify`
-> - `python setup.py install`
+- `git clone https://github.com/AceFire6/quart_minify.git`
+- `cd quart_minify`
+- `python setup.py install`
 
 ## Setup:
-#### - Inside Quart app:
+### Inside Quart app:
 
 ```python
 from quart import Quart
@@ -25,9 +24,9 @@ app = Quart(__name__)
 minify(app=app)
 ```
 
-#### - Result:
+### Result:
 
-> Before:
+#### Before:
 ```html
 <html>
   <head>
@@ -47,7 +46,7 @@ minify(app=app)
   </body>
 </html>
 ```
-> After:
+#### After:
 ```html
 <html> <head><script>if(true){console.log('working !')}</script><style>body{background-color:red;}</style></head> <body> <h1>Example !</h1> </body> </html>
 ```
@@ -79,9 +78,9 @@ def __init__(self,
 ## Credit:
 Adapted from [flask_minify](https://github.com/mrf345/flask_minify)
 
-> - [htmlmin][1322354e]: HTML python minifier.
-> - [lesscpy][1322353e]: Python less compiler and css minifier.
-> - [jsmin][1322355e]: JavaScript python minifier.
+- [htmlmin][1322354e]: HTML python minifier.
+- [lesscpy][1322353e]: Python less compiler and css minifier.
+- [jsmin][1322355e]: JavaScript python minifier.
 
 [1322353e]: https://github.com/lesscpy/lesscpy "lesscpy repo"
 [1322354e]: https://github.com/mankyd/htmlmin "htmlmin repo"
