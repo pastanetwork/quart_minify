@@ -8,14 +8,7 @@ from hashlib import md5
 
 class Minify:
     def __init__(
-        self,
-        app=None,
-        html=True,
-        js=True,
-        cssless=True,
-        cache=True,
-        fail_safe=True,
-        bypass=(),
+        self, app=None, html=True, js=True, cssless=True, cache=True, fail_safe=True, bypass=()
     ):
         """
         A Quart extension to minify flask response for html,
@@ -38,11 +31,11 @@ class Minify:
         self.hashes = {}  # where the hashes and text will be stored
 
         if self.app is None:
-            raise(AttributeError("minify(app=) requires Quart app instance"))
+            raise (AttributeError("minify(app=) requires Quart app instance"))
 
-        for arg in ['cssless', 'js', 'html', 'cache']:
+        for arg in ["cssless", "js", "html", "cache"]:
             if not isinstance(eval(arg), bool):
-                raise(TypeError("minify(" + arg + "=) requires True or False"))
+                raise (TypeError("minify(" + arg + "=) requires True or False"))
 
         self.app.after_request(self.to_loop_tag)
 
@@ -51,7 +44,7 @@ class Minify:
         if text in self.hashes.keys():
             return self.hashes.get(text)
         else:
-            hashed = md5(text.encode('utf8')).hexdigest()[:9]
+            hashed = md5(text.encode("utf8")).hexdigest()[:9]
             self.hashes[text] = hashed
             return hashed
 
@@ -60,9 +53,11 @@ class Minify:
         if self.cache and self.get_hashed(text) in self.history.keys():
             return self.history[self.get_hashed(text)]
         else:
-            minifed = compile(
-                StringIO(to_replace), minify=True, xminify=True
-            ) if css else jsmin(to_replace).replace('\n', ';')
+            minifed = (
+                compile(StringIO(to_replace), minify=True, xminify=True)
+                if css
+                else jsmin(to_replace).replace("\n", ";")
+            )
 
             if self.cache and self.get_hashed(text) not in self.history.keys():
                 self.history[self.get_hashed(text)] = minifed
@@ -71,32 +66,28 @@ class Minify:
 
     async def to_loop_tag(self, response):
         if (
-            response.content_type == 'text/html; charset=utf-8'
+            response.content_type == "text/html; charset=utf-8"
             and request.url_rule.rule not in self.bypass
         ):
             response.direct_passthrough = False
             text = await response.get_data(raw=False)
 
-            for tag in [t for t in [
-                (0, 'style')[self.cssless],
-                (0, 'script')[self.js]
-            ] if t != 0]:
-                if f'<{tag} type=' in text or f'<{tag}>' in text:
-                    for i in range(1, len(text.split(f'<{tag}'))):
-                        to_replace = text.split(
-                            f'<{tag}', i
-                        )[i].split(
-                            f'</{tag}>'
-                        )[0].split(
-                            '>', 1
-                        )[1]
+            for tag in [t for t in [(0, "style")[self.cssless], (0, "script")[self.js]] if t != 0]:
+                if f"<{tag} type=" in text or f"<{tag}>" in text:
+                    for i in range(1, len(text.split(f"<{tag}"))):
+                        to_replace = (
+                            text.split(f"<{tag}", i)[i].split(f"</{tag}>")[0].split(">", 1)[1]
+                        )
 
                         result = None
                         try:
-                            result = text.replace(
-                                to_replace,
-                                self.store_minifed(tag == 'style', text, to_replace),
-                            ) if len(to_replace) > 2 else text
+                            result = (
+                                text.replace(
+                                    to_replace, self.store_minifed(tag == "style", text, to_replace)
+                                )
+                                if len(to_replace) > 2
+                                else text
+                            )
                             text = result
                         except Exception as e:
                             if self.fail_safe:
