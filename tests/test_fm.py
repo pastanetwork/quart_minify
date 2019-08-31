@@ -1,7 +1,7 @@
 import pytest
 from pytest import fixture
 from quart import Quart
-from quart_minify import Minify
+from quart_minify.minify import Minify
 
 app = Quart(__name__)
 
