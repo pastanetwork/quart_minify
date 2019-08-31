@@ -5,10 +5,10 @@
 A Quart extension to minify quart response for html, javascript, css and less compilation as well.</h3>
 
 ## Install:
-#### - With pip
+#### With pip
 - `pip install quart-minify`
 
-#### - From the source:
+#### From the source:
 - `git clone https://github.com/AceFire6/quart_minify.git`
 - `cd quart_minify`
 - `python setup.py install`
@@ -21,7 +21,7 @@ from quart import Quart
 from quart_minify import Minify
 
 app = Quart(__name__)
-minify(app=app)
+Minify(app=app)
 ```
 
 ### Result:
