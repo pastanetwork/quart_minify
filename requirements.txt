@@ -1,8 +1,0 @@
-flask
-pytest==3.6
-pytest-cov
-lesscpy
-htmlmin
-jsmin
-coverage
-python-coveralls

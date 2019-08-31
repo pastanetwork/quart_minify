@@ -1,4 +1,4 @@
-from flask import request
+from quart import request
 from lesscpy import compile
 from jsmin import jsmin
 from six import StringIO
@@ -11,12 +11,12 @@ class minify(object):
         self, app=None,
         html=True, js=True,
         cssless=True, cache=True,
-        fail_safe=True, bypass=[]
+        fail_safe=True, bypass=(),
     ):
         """
-        A Flask extension to minify flask response for html,
+        A Quart extension to minify flask response for html,
         javascript, css and less.
-        @param: app Flask app instance to be passed (default:None).
+        @param: app Quart app instance to be passed (default:None).
         @param: js To minify the css output (default:False).
         @param: cssless To minify spaces in css (default:True).
         @param: cache To cache minifed response with hash (default: True).
@@ -33,7 +33,7 @@ class minify(object):
         self.history = {}  # where cache hash and compiled response stored
         self.hashes = {}  # where the hashes and text will be stored
         if self.app is None:
-            raise(AttributeError("minify(app=) requires Flask app instance"))
+            raise(AttributeError("minify(app=) requires Quart app instance"))
         for arg in ['cssless', 'js', 'html', 'cache']:
             if not isinstance(eval(arg), bool):
                 raise(TypeError("minify(" + arg + "=) requires True or False"))
@@ -60,12 +60,12 @@ class minify(object):
                 self.history[self.getHashed(text)] = minifed
             return minifed
 
-    def toLoopTag(self, response):
+    async def toLoopTag(self, response):
         if response.content_type == u'text/html; charset=utf-8' and not (
             request.url_rule.rule in self.bypass
         ):
             response.direct_passthrough = False
-            text = response.get_data(as_text=True)
+            text = await response.get_data(raw=False)
             for tag in [t for t in [
                 (0, 'style')[self.cssless],
                 (0, 'script')[self.js]

@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "quart_minify"
+version = "0.1.0"
+description = "A Quart extension to minify quart response for html, javascript, css and less compilation as well."
+authors = ["Mohamed Feddad <mrf345@gmail.com>", "Jethro Muller <git@jethromuller.co.za>"]
+license = "MIT"
+packages = [
+    {include = "quart_minify"}
+]
+
+[tool.poetry.dependencies]
+htmlmin = "^0.1.12"
+jsmin = "^2.2"
+lesscpy = "^0.13.0"
+python = "^3.7"
+quart = "^0.10.0"
+
+[tool.poetry.dev-dependencies]
+coverage = "^4.5"
+pytest = "^5.1"
+pytest-asyncio = "^0.10.0"
+pytest-cov = "^2.7"
+python-coveralls = "^2.9"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+

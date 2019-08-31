@@ -1,11 +1,9 @@
-from os import close, unlink
-from tempfile import mkstemp
+import pytest
 from pytest import fixture
-from hashlib import md5
-from flask import Flask
-from flask_minify import minify
+from quart import Quart
+from quart_minify import minify
 
-app = Flask(__name__)
+app = Quart(__name__)
 
 
 @app.route('/html')
@@ -66,40 +64,62 @@ def client():
     yield client
 
 
-def test_html_bypassing(client):
+@pytest.mark.asyncio
+async def test_html_bypassing(client):
     """ testing HTML route bypassing """
     minify(app=app, html=True, cssless=False, js=False, bypass=['/html'])
-    resp = client.get('/html')
-    assert b'<html> <body> <h1> HTML </h1> </body> </html>' != resp.data
+
+    resp = await client.get('/html')
+    data = await resp.get_data()
+
+    assert b'<html> <body> <h1> HTML </h1> </body> </html>' != data
 
 
-def test_html_minify(client):
+@pytest.mark.asyncio
+async def test_html_minify(client):
     """ testing HTML minify option """
     minify(app=app, html=True, cssless=False, js=False)
-    resp = client.get('/html')
-    assert b'<html> <body> <h1> HTML </h1> </body> </html>' == resp.data
+
+    resp = await client.get('/html')
+    data = await resp.get_data()
+
+    assert b'<html> <body> <h1> HTML </h1> </body> </html>' == data
 
 
-def test_javascript_minify(client):
+@pytest.mark.asyncio
+async def test_javascript_minify(client):
     """ testing JavaScript minify option """
     minify(app=app, html=False, cssless=False, js=True)
-    resp = client.get('/js')
-    assert b'<script>["J","S"].reduce(function(a,r){return a+r})</script>' == resp.data
+
+    resp = await client.get('/js')
+    data = await resp.get_data()
+
+    assert b'<script>["J","S"].reduce(function(a,r){return a+r})</script>' == data
 
 
-def test_lesscss_minify(client):
+@pytest.mark.asyncio
+async def test_lesscss_minify(client):
     """ testing css and less minify option """
     minify(app=app, html=False, cssless=True, js=False)
-    resp = client.get('/cssless')
-    assert b'<style>body{color:red;}</style>' == resp.data
+
+    resp = await client.get('/cssless')
+    data = await resp.get_data()
+
+    assert b'<style>body{color:red;}</style>' == data
 
 
-def test_minify_cache(client):
+@pytest.mark.asyncio
+async def test_minify_cache(client):
     """ testing caching minifed response """
     minify_store = minify(app=app, js=False, cssless=True, cache=True)
-    client.get('/cssless').data # to cover hashing return
-    resp = client.get('/cssless').data
-    assert resp.decode('utf8').replace(
+
+    first_resp = await client.get('/cssless')
+    first_resp_data = first_resp.get_data()  # to cover hashing return
+
+    resp = await client.get('/cssless')
+    second_resp_data = await resp.get_data()
+
+    assert second_resp_data.decode('utf8').replace(
         '<style>', ''
     ).replace('</style>', '') in minify_store.history.values()
 
@@ -116,21 +136,26 @@ def test_false_input(client):
         assert type(e) is TypeError
 
 
-def test_fail_safe(client):
+@pytest.mark.asyncio
+async def test_fail_safe(client):
     """ testing fail safe enabled with false input """
     minify(app=app, fail_safe=True)
-    resp = client.get('/cssless_false')
+
+    resp = await client.get('/cssless_false')
+    data = await resp.get_data()
+
     assert b'''<style>
         body {
             color: red;;
         }
-    </style>''' == resp.data
+    </style>''' == data
 
 
-def test_fail_safe_false_input(client):
+@pytest.mark.asyncio
+async def test_fail_safe_false_input(client):
     """testing fail safe disabled with false input """
     minify(app=app, fail_safe=False, cache=False)
     try:
-        client.get('/cssless_false')
+        await client.get('/cssless_false')
     except Exception as e:
         assert 'CompilationError' == e.__class__.__name__
