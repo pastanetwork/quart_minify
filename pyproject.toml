@@ -2,7 +2,7 @@
 name = "quart_minify"
 version = "0.1.1"
 description = "A Quart extension to minify quart response for html, javascript, css and less compilation as well."
-authors = ["Mohamed Feddad <mrf345@gmail.com>", "Jethro Muller <git@jethromuller.co.za>"]
+authors = ["Jethro Muller <git@jethromuller.co.za>", "Mohamed Feddad <mrf345@gmail.com>"]
 license = "MIT"
 packages = [
     {include = "quart_minify"}
