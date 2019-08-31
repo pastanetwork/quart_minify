@@ -1,7 +1,7 @@
 import pytest
 from pytest import fixture
 from quart import Quart
-from quart_minify import minify
+from quart_minify import Minify
 
 app = Quart(__name__)
 
@@ -67,7 +67,7 @@ def client():
 @pytest.mark.asyncio
 async def test_html_bypassing(client):
     """ testing HTML route bypassing """
-    minify(app=app, html=True, cssless=False, js=False, bypass=['/html'])
+    Minify(app=app, html=True, cssless=False, js=False, bypass=['/html'])
 
     resp = await client.get('/html')
     data = await resp.get_data()
@@ -78,7 +78,7 @@ async def test_html_bypassing(client):
 @pytest.mark.asyncio
 async def test_html_minify(client):
     """ testing HTML minify option """
-    minify(app=app, html=True, cssless=False, js=False)
+    Minify(app=app, html=True, cssless=False, js=False)
 
     resp = await client.get('/html')
     data = await resp.get_data()
@@ -89,7 +89,7 @@ async def test_html_minify(client):
 @pytest.mark.asyncio
 async def test_javascript_minify(client):
     """ testing JavaScript minify option """
-    minify(app=app, html=False, cssless=False, js=True)
+    Minify(app=app, html=False, cssless=False, js=True)
 
     resp = await client.get('/js')
     data = await resp.get_data()
@@ -100,7 +100,7 @@ async def test_javascript_minify(client):
 @pytest.mark.asyncio
 async def test_lesscss_minify(client):
     """ testing css and less minify option """
-    minify(app=app, html=False, cssless=True, js=False)
+    Minify(app=app, html=False, cssless=True, js=False)
 
     resp = await client.get('/cssless')
     data = await resp.get_data()
@@ -111,7 +111,7 @@ async def test_lesscss_minify(client):
 @pytest.mark.asyncio
 async def test_minify_cache(client):
     """ testing caching minifed response """
-    minify_store = minify(app=app, js=False, cssless=True, cache=True)
+    minify_store = Minify(app=app, js=False, cssless=True, cache=True)
 
     first_resp = await client.get('/cssless')
     first_resp_data = first_resp.get_data()  # to cover hashing return
@@ -127,11 +127,11 @@ async def test_minify_cache(client):
 def test_false_input(client):
     """ testing false input for raise coverage """
     try:
-        minify(app=None)
+        Minify(app=None)
     except Exception as e:
         assert type(e) is AttributeError
     try:
-        minify(app, 'nothing', 'nothing')
+        Minify(app, 'nothing', 'nothing')
     except Exception as e:
         assert type(e) is TypeError
 
@@ -139,7 +139,7 @@ def test_false_input(client):
 @pytest.mark.asyncio
 async def test_fail_safe(client):
     """ testing fail safe enabled with false input """
-    minify(app=app, fail_safe=True)
+    Minify(app=app, fail_safe=True)
 
     resp = await client.get('/cssless_false')
     data = await resp.get_data()
@@ -154,7 +154,7 @@ async def test_fail_safe(client):
 @pytest.mark.asyncio
 async def test_fail_safe_false_input(client):
     """testing fail safe disabled with false input """
-    minify(app=app, fail_safe=False, cache=False)
+    Minify(app=app, fail_safe=False, cache=False)
     try:
         await client.get('/cssless_false')
     except Exception as e:

@@ -18,7 +18,7 @@ A Quart extension to minify quart response for html, javascript, css and less co
 
 ```python
 from quart import Quart
-from quart_minify import minify
+from quart_minify import Minify
 
 app = Quart(__name__)
 minify(app=app)

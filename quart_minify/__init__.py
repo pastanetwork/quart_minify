@@ -6,7 +6,7 @@ from htmlmin import minify as minifyHtml
 from hashlib import md5
 
 
-class minify(object):
+class Minify(object):
     def __init__(
         self, app=None,
         html=True, js=True,
