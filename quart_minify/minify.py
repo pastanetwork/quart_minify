@@ -31,13 +31,15 @@ class Minify:
         self.history = {}  # where cache hash and compiled response stored
         self.hashes = {}  # where the hashes and text will be stored
 
-        if self.app is None:
-            raise (AttributeError("minify(app=) requires Quart app instance"))
-
         for arg in ["cssless", "js", "html", "cache"]:
             if not isinstance(eval(arg), bool):
                 raise (TypeError("minify(" + arg + "=) requires True or False"))
 
+        if self.app:
+            self.init_app(self.app)
+
+    def init_app(self, app):
+        self.app = app
         self.app.after_request(self.to_loop_tag)
 
     def get_hashed(self, text):
