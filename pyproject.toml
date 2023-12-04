@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "quart_minify"
-version = "0.3.0"
+version = "0.4.0"
 description = "A Quart extension to minify quart response for html, javascript, css and less compilation as well."
 authors = ["Jethro Muller <git@jethromuller.co.za>", "Mohamed Feddad <mrf345@gmail.com>"]
 license = "MIT"
@@ -10,7 +10,7 @@ packages = [
 
 [tool.poetry.dependencies]
 htmlmin = "^0.1.12"
-jsmin = "^2.2"
+jsmin = "^3.0.1"
 lesscpy = "^0.13.0"
 python = "^3.7"
 quart = "^0.10.0"
@@ -21,7 +21,7 @@ pytest = "^5.1"
 pytest-asyncio = "^0.10.0"
 pytest-cov = "^2.7"
 python-coveralls = "^2.9"
-black = {version = "^18.3-alpha.0", allows-prereleases = true}
+black = {version = "^18.3-alpha.0", allow-prereleases = true}
 flake8 = "^3.7"
 flake8-quotes = "^2.1"
 
