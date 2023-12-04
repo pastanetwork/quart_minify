@@ -1,21 +1,24 @@
 [tool.poetry]
 name = "quart_minify"
-version = "0.4.0"
+version = "0.4.1"
+readme = "README.md"
 description = "A Quart extension to minify quart response for html, javascript, css and less compilation as well."
+repository = "https://github.com/AceFire6/quart_minify"
 authors = ["Jethro Muller <git@jethromuller.co.za>", "Mohamed Feddad <mrf345@gmail.com>"]
 license = "MIT"
+keywords = ["quart", "minify"]
 packages = [
     {include = "quart_minify"}
 ]
 
 [tool.poetry.dependencies]
-htmlmin = "^0.1.12"
-jsmin = "^3.0.1"
-lesscpy = "^0.13.0"
-python = "^3.7"
-quart = "^0.10.0"
+htmlmin = ">=0.1.12"
+jsmin = ">=3.0.1"
+lesscpy = ">=0.13.0"
+python = ">=3.7"
+quart = ">=0.10.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 coverage = "^4.5"
 pytest = "^5.1"
 pytest-asyncio = "^0.10.0"
