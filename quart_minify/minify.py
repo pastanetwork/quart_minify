@@ -70,7 +70,7 @@ class Minify:
     async def to_loop_tag(self, response):
         if (
             response.content_type == "text/html; charset=utf-8"
-            and request.url_rule.rule not in self.bypass
+            and (request.url_rule is None or request.url_rule.rule not in self.bypass)
         ):
             response.direct_passthrough = False
             text = await response.get_data(as_text=True)
@@ -98,7 +98,7 @@ class Minify:
                             else:
                                 raise e
 
-            final_resp = minify_html(text) if self.html else text
+            final_resp = minify_html(text, remove_comments=True) if self.html else text
             response.set_data(final_resp)
 
         return response
