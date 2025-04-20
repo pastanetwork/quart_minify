@@ -73,7 +73,7 @@ class Minify:
             and request.url_rule.rule not in self.bypass
         ):
             response.direct_passthrough = False
-            text = await response.get_data(raw=False)
+            text = await response.get_data(as_text=True)
 
             for tag in [t for t in [(0, "style")[self.cssless], (0, "script")[self.js]] if t != 0]:
                 if f"<{tag} type=" in text or f"<{tag}>" in text:
