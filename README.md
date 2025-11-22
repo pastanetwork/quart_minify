@@ -60,7 +60,11 @@ def __init__(self,
   cssless=True,
   cache=True,
   fail_safe=True,
-  bypass=()):
+  bypass=(),
+  remove_console=False,
+  console_types=('log', 'warn', 'error'),
+  remove_debugger=False,
+  cache_limit=100):
   """
     A Quart extension to minify flask response for html,
     javascript, css and less.
@@ -70,10 +74,66 @@ def __init__(self,
     @param: cache To cache minifed response with hash (default: True).
     @param: fail_safe to avoid raising error while minifying (default True).
     @param: bypass a list of the routes to be bypassed by the minifier
+    @param: remove_console Remove console statements from JavaScript (default: False).
+    @param: console_types Tuple of console types to remove: 'log', 'warn', 'error' (default: ('log', 'warn', 'error')).
+    @param: remove_debugger Remove debugger statements from JavaScript (default: False).
+    @param: cache_limit Maximum number of items to keep in cache, uses LRU eviction (default: 100).
     Notice: bypass route should be identical to the url_rule used for example:
     bypass=['/user/<int:user_id>', '/users']
   """
 ```
+
+### Advanced Features:
+
+#### Console Removal
+Remove all console statements (log, warn, error):
+```python
+Minify(app=app, remove_console=True)
+```
+
+Remove only `console.log`:
+```python
+Minify(app=app, remove_console=True, console_types=('log',))
+```
+
+Remove only `console.warn` and `console.error`:
+```python
+Minify(app=app, remove_console=True, console_types=('warn', 'error'))
+```
+
+#### Debugger Removal
+Remove all `debugger;` statements from JavaScript:
+```python
+Minify(app=app, remove_debugger=True)
+```
+
+#### Cache Control
+Set custom cache limit with LRU eviction (default: 100 items):
+```python
+Minify(app=app, cache_limit=50)  # Only cache 50 most recent responses
+```
+
+#### Combined Example (Production Ready)
+Remove console logs and debugger statements for production:
+```python
+Minify(
+    app=app,
+    html=True,
+    js=True,
+    cssless=True,
+    remove_console=True,
+    remove_debugger=True,
+    cache_limit=200
+)
+```
+
+## What's New:
+
+### Security & Performance Improvements:
+- ✅ **Fixed `eval()` security vulnerability** - No longer uses `eval()` for parameter validation
+- ✅ **LRU Cache with size limit** - Prevents memory leaks with configurable `cache_limit`
+- ✅ **Improved console removal** - Better handling of nested parentheses and string literals
+- ✅ **Debugger statement removal** - New `remove_debugger` option for production builds
 
 ## Credit:
 Adapted from [flask_minify](https://github.com/mrf345/flask_minify)
