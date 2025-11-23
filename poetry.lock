@@ -451,13 +451,13 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
-name = "jsmin"
-version = "3.0.1"
+name = "rjsmin"
+version = "1.2.5"
 description = "JavaScript minifier."
 optional = false
 python-versions = "*"
 files = [
-    {file = "jsmin-3.0.1.tar.gz", hash = "sha256:c0959a121ef94542e807a674142606f7e90214a2b3d1eb17300244bbb5cc2bfc"},
+    {file = "rjsmin-1.2.5.tar.gz", hash = "sha256:6f5f158ca5744ce6ff8e7ecf0d7ebff0a3ae5538dcfb955c4e09b9847cb42f98"},
 ]
 
 [[package]]
