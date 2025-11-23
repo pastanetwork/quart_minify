@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "quart_minify"
-version = "0.5.0"
+version = "0.5.1"
 readme = "README.md"
 description = "A Quart extension to minify quart response for html, javascript, css and less compilation as well."
 repository = "https://github.com/AceFire6/quart_minify"

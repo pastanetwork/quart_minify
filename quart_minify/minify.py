@@ -203,7 +203,7 @@ class Minify:
                 if self.remove_debugger:
                     js_code = re.sub(r'\bdebugger\s*;?\s*', '', js_code)
 
-                minifed = jsmin(js_code).replace("\n", ";")
+                minifed = jsmin(js_code)
 
             if self.cache:
                 if len(self.history) >= self.cache_limit:
