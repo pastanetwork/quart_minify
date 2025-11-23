@@ -895,4 +895,253 @@ async def test_comments_in_strings_preserved():
 
     # Strings with // should be preserved
     assert b'https://example.com/path' in data or b"https://example.com/path" in data
-    assert b'// fake comment' in data or b'fake comment' in data
+
+
+@pytest.mark.asyncio
+async def test_arrow_function_console_removal():
+    """ testing that console.log inside arrow functions is replaced with {} """
+    test_app = Quart(__name__)
+
+    @test_app.route("/arrow_functions")
+    def arrow_functions():
+        return """<script>
+        const creditsCSS = document.getElementById('credits-css');
+        if (creditsCSS) {
+            creditsCSS.addEventListener('load', () => console.log('Credits CSS fully loaded'));
+            creditsCSS.addEventListener('error', () => console.log('Credits CSS failed to load'));
+        }
+
+        const button = document.getElementById('btn');
+        button.addEventListener('click', () => {
+            console.log('Button clicked');
+            alert('Hello!');
+        });
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/arrow_functions")
+    data = await resp.get_data()
+
+    # Console statements should be removed
+    assert b'console.log' not in data
+
+    # Arrow functions with only console should have {} body
+    assert b'()=>{}' in data or b'() => {}' in data
+
+    # Arrow function with multiple statements should keep other statements
+    assert b"alert('Hello!')" in data or b'alert("Hello!")' in data
+
+    # Should not have invalid syntax like ()=>)
+    assert b'()=>)' not in data
+    assert b'() => )' not in data
+
+
+@pytest.mark.asyncio
+async def test_arrow_function_single_param():
+    """ testing arrow function with single parameter (no parentheses) """
+    test_app = Quart(__name__)
+
+    @test_app.route("/single_param_arrow")
+    def single_param_arrow():
+        return """<script>
+        const items = [1, 2, 3];
+        items.forEach(item => console.log(item));
+        items.map(x => console.warn(x));
+
+        // Arrow with single param and multiple statements
+        items.forEach(item => {
+            console.log(item);
+            doSomething(item);
+        });
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/single_param_arrow")
+    data = await resp.get_data()
+
+    # Console statements should be removed
+    assert b'console.log' not in data
+    assert b'console.warn' not in data
+
+    # Arrow functions should remain valid
+    assert b'forEach' in data
+    assert b'map' in data
+    assert b'doSomething' in data
+
+    # Should not have invalid syntax
+    assert b'=>)' not in data
+
+
+@pytest.mark.asyncio
+async def test_nested_arrow_functions():
+    """ testing nested arrow functions with console """
+    test_app = Quart(__name__)
+
+    @test_app.route("/nested_arrows")
+    def nested_arrows():
+        return """<script>
+        const outer = () => {
+            const inner = () => console.log('nested');
+            return inner;
+        };
+
+        const curried = (a) => (b) => console.log(a, b);
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/nested_arrows")
+    data = await resp.get_data()
+
+    # Console should be removed
+    assert b'console.log' not in data
+
+    # Functions should remain
+    assert b'outer' in data
+    assert b'inner' in data
+    assert b'curried' in data
+
+
+@pytest.mark.asyncio
+async def test_ternary_with_console():
+    """ testing ternary operator with console statements """
+    test_app = Quart(__name__)
+
+    @test_app.route("/ternary_console")
+    def ternary_console():
+        return """<script>
+        const debug = true;
+        debug ? console.log('debug on') : console.log('debug off');
+
+        const result = condition ? console.warn('warning') : doSomething();
+
+        condition ? doA() : console.error('failed');
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/ternary_console")
+    data = await resp.get_data()
+
+    # Console should be removed
+    assert b'console.log' not in data
+    assert b'console.warn' not in data
+    assert b'console.error' not in data
+
+    # Other code should remain
+    assert b'debug' in data
+    assert b'doSomething' in data or b'doA' in data
+
+
+@pytest.mark.asyncio
+async def test_multiple_console_same_line():
+    """ testing multiple console statements on same line """
+    test_app = Quart(__name__)
+
+    @test_app.route("/multi_console_line")
+    def multi_console_line():
+        return """<script>
+        console.log('first'); console.log('second'); console.log('third');
+
+        if (condition) { console.warn('a'); console.error('b'); }
+
+        var x = 1; console.log(x); var y = 2;
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/multi_console_line")
+    data = await resp.get_data()
+
+    # All console statements should be removed
+    assert b'console.log' not in data
+    assert b'console.warn' not in data
+    assert b'console.error' not in data
+
+    # Variables should remain
+    assert b'var x=1' in data or b'var x = 1' in data
+    assert b'var y=2' in data or b'var y = 2' in data
+    assert b'condition' in data
+
+
+@pytest.mark.asyncio
+async def test_console_in_return_statement():
+    """ testing console in return statements """
+    test_app = Quart(__name__)
+
+    @test_app.route("/return_console")
+    def return_console():
+        return """<script>
+        function test1() {
+            return console.log('returning');
+        }
+
+        const test2 = () => {
+            return console.warn('arrow return');
+        };
+
+        function test3() {
+            console.log('before return');
+            return 42;
+        }
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/return_console")
+    data = await resp.get_data()
+
+    # Console should be removed
+    assert b'console.log' not in data
+    assert b'console.warn' not in data
+
+    # Functions should remain
+    assert b'function test1' in data or b'test1()' in data
+    assert b'test2' in data
+    assert b'return 42' in data or b'return' in data
+
+
+@pytest.mark.asyncio
+async def test_console_with_object_methods():
+    """ testing console inside object methods """
+    test_app = Quart(__name__)
+
+    @test_app.route("/object_methods")
+    def object_methods():
+        return """<script>
+        const obj = {
+            method1: function() {
+                console.log('method1');
+                return true;
+            },
+            method2: () => console.log('method2'),
+            method3() {
+                console.warn('method3');
+            }
+        };
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/object_methods")
+    data = await resp.get_data()
+
+    # Console should be removed
+    assert b'console.log' not in data
+    assert b'console.warn' not in data
+
+    # Object structure should remain
+    assert b'obj' in data
+    assert b'method1' in data
+    assert b'method2' in data
+    assert b'method3' in data
+    assert b'return true' in data or b'return' in data

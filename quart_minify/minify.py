@@ -243,9 +243,15 @@ class Minify:
                 before = result[:abs_start]
                 after = result[paren_end + 1:]
 
-                after = re.sub(r'^\s*;?\s*', '', after)
+                arrow_match = re.search(r'(=>)\s*$', before[-30:] if len(before) >= 30 else before)
 
-                result = before + after
+                if arrow_match:
+                    after = re.sub(r'^\s*;?\s*', '', after)
+                    result = before + '{}' + after
+                else:
+                    after = re.sub(r'^\s*;?\s*', '', after)
+                    result = before + after
+
                 offset = abs_start
 
         return result
