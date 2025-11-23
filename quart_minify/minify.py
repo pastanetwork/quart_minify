@@ -142,6 +142,75 @@ class Minify:
 
         return -1
 
+    def remove_comments(self, js_code):
+        """
+        Remove single-line (//) and multi-line (/* */) comments from JavaScript.
+        Preserves comments inside strings and regex patterns.
+        @param: js_code JavaScript code to process
+        @return: JavaScript code with comments removed
+        """
+        result = []
+        i = 0
+        length = len(js_code)
+        in_string = False
+        string_char = None
+        in_regex = False
+        escape_next = False
+
+        while i < length:
+            char = js_code[i]
+
+            if escape_next:
+                result.append(char)
+                escape_next = False
+                i += 1
+                continue
+
+            if char == '\\' and (in_string or in_regex):
+                result.append(char)
+                escape_next = True
+                i += 1
+                continue
+
+            if char in ('"', "'", '`') and not in_regex:
+                if not in_string:
+                    in_string = True
+                    string_char = char
+                elif char == string_char:
+                    in_string = False
+                    string_char = None
+                result.append(char)
+                i += 1
+                continue
+
+            if in_string or in_regex:
+                result.append(char)
+                i += 1
+                continue
+
+            if i + 1 < length and char == '/' and js_code[i + 1] == '/':
+                while i < length and js_code[i] not in ('\n', '\r'):
+                    i += 1
+                if i < length:
+                    result.append(js_code[i])
+                    i += 1
+                continue
+
+            if i + 1 < length and char == '/' and js_code[i + 1] == '*':
+                i += 2
+                while i + 1 < length:
+                    if js_code[i] == '*' and js_code[i + 1] == '/':
+                        i += 2
+                        break
+                    i += 1
+                result.append(' ')
+                continue
+
+            result.append(char)
+            i += 1
+
+        return ''.join(result)
+
     def remove_console_statements(self, js_code):
         """
         Remove console statements from JavaScript code based on console_types.
@@ -198,8 +267,8 @@ class Minify:
             if css:
                 minifed = compile(StringIO(to_replace), minify=True, xminify=True)
             else:
-                js_code = self.remove_console_statements(to_replace)
-
+                js_code = self.remove_comments(to_replace)
+                js_code = self.remove_console_statements(js_code)
                 if self.remove_debugger:
                     js_code = re.sub(r'\bdebugger\s*;?\s*', '', js_code)
 

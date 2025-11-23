@@ -775,3 +775,124 @@ async def test_console_with_string_containing_closing_paren():
     # Variables should remain
     assert b'var x=1' in data
     assert b'var y=2' in data
+
+
+@pytest.mark.asyncio
+async def test_comments_before_minification():
+    """ testing that // comments are removed before minification to prevent code breakage """
+    test_app = Quart(__name__)
+
+    @test_app.route("/comments_issue")
+    def comments_issue():
+        return """<script>
+        // CORRECTION: Initialisation beaucoup plus simple sans resize
+        const initializeApp = async () => {
+            console.log('Starting app...');
+
+            // Wait a bit for stability
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // Initialize animations
+            if (window.MyServicesAnimations?.init) {
+                window.MyServicesAnimations.init();
+            }
+
+            /* Multi-line comment
+               should also be removed */
+            const result = calculate();
+
+            return result;
+        };
+
+        // Single line comment at end
+        initializeApp();
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/comments_issue")
+    data = await resp.get_data()
+
+    # Comments should be removed
+    assert b'// CORRECTION:' not in data
+    assert b'// Wait a bit' not in data
+    assert b'// Initialize' not in data
+    assert b'// Single line' not in data
+    assert b'/* Multi-line' not in data
+
+    # Console should be removed
+    assert b'console.log' not in data
+
+    # Code should remain and be functional
+    assert b'const initializeApp' in data or b'const initializeApp=' in data
+    assert b'async' in data
+    assert b'MyServicesAnimations' in data
+    assert b'calculate()' in data or b'calculate ()' in data
+    assert b'initializeApp()' in data or b'initializeApp ()' in data
+
+    # Verify the code is actually minified (no unnecessary whitespace)
+    assert b'\n        ' not in data or data.count(b'\n') < 5
+
+
+@pytest.mark.asyncio
+async def test_inline_comments_removal():
+    """ testing that inline // comments after code are handled correctly """
+    test_app = Quart(__name__)
+
+    @test_app.route("/inline_comments")
+    def inline_comments():
+        return """<script>
+        var x = 5; // This is x
+        var y = 10; // This is y
+        var sum = x + y; // Calculate sum
+        console.log(sum); // Log the result
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, remove_console=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/inline_comments")
+    data = await resp.get_data()
+
+    # Comments should be removed
+    assert b'// This is x' not in data
+    assert b'// This is y' not in data
+    assert b'// Calculate sum' not in data
+    assert b'// Log the result' not in data
+
+    # Console should be removed
+    assert b'console.log' not in data
+
+    # Variables should remain
+    assert b'var x=5' in data
+    assert b'var y=10' in data
+    assert b'var sum=x+y' in data or b'sum = x + y' in data
+
+
+@pytest.mark.asyncio
+async def test_comments_in_strings_preserved():
+    """ testing that // inside strings are NOT removed """
+    test_app = Quart(__name__)
+
+    @test_app.route("/comments_in_strings")
+    def comments_in_strings():
+        return """<script>
+        var url = "https://example.com/path"; // Real comment to remove
+        var comment = "This is a // fake comment in string";
+        var regex = /https?:\\/\\//; // Another real comment
+    </script>"""
+
+    Minify(app=test_app, html=False, js=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/comments_in_strings")
+    data = await resp.get_data()
+
+    # Real comments should be removed
+    assert b'// Real comment' not in data
+    assert b'// Another real' not in data
+
+    # Strings with // should be preserved
+    assert b'https://example.com/path' in data or b"https://example.com/path" in data
+    assert b'// fake comment' in data or b'fake comment' in data
