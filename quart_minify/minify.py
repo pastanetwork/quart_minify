@@ -281,6 +281,38 @@ class Minify:
 
             return minifed
 
+    def _find_and_minify_tags(self, text, tag, is_css):
+        """
+        Find and minify all occurrences of a specific tag type.
+        Uses regex to properly isolate each tag and its content.
+        @param: text The HTML text to process
+        @param: tag The tag name ('style' or 'script')
+        @param: is_css Whether this is CSS (True) or JavaScript (False)
+        @return: Processed HTML text
+        """
+        import re
+
+        pattern = rf'<{tag}(?:\s+[^>]*)?>(.+?)<\/{tag}>'
+
+        def replace_tag_content(match):
+            """Replace the content of a single tag with its minified version"""
+            content = match.group(1)
+
+            if len(content) <= 2:
+                return match.group(0)
+
+            try:
+                minified = self.store_minifed(is_css, content, content)
+                return match.group(0).replace(content, minified)
+            except Exception as e:
+                if self.fail_safe:
+                    # Return original tag if minification fails
+                    return match.group(0)
+                else:
+                    raise e
+
+        return re.sub(pattern, replace_tag_content, text, flags=re.DOTALL)
+
     async def to_loop_tag(self, response):
         if (
             response.content_type == "text/html; charset=utf-8"
@@ -289,28 +321,11 @@ class Minify:
             response.direct_passthrough = False
             text = await response.get_data(as_text=True)
 
-            for tag in [t for t in [(0, "style")[self.cssless], (0, "script")[self.js]] if t != 0]:
-                if f"<{tag} type=" in text or f"<{tag}>" in text:
-                    for i in range(1, len(text.split(f"<{tag}"))):
-                        to_replace = (
-                            text.split(f"<{tag}", i)[i].split(f"</{tag}>")[0].split(">", 1)[1]
-                        )
+            if self.cssless:
+                text = self._find_and_minify_tags(text, "style", True)
 
-                        result = None
-                        try:
-                            result = (
-                                text.replace(
-                                    to_replace, self.store_minifed(tag == "style", text, to_replace)
-                                )
-                                if len(to_replace) > 2
-                                else text
-                            )
-                            text = result
-                        except Exception as e:
-                            if self.fail_safe:
-                                text = result or text
-                            else:
-                                raise e
+            if self.js:
+                text = self._find_and_minify_tags(text, "script", False)
 
             final_resp = minify_html(text, remove_comments=True) if self.html else text
             response.set_data(final_resp)
