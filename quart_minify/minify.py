@@ -4,7 +4,7 @@ import re
 from collections import OrderedDict
 
 from htmlmin import minify as minify_html
-from jsmin import jsmin
+import rjsmin
 from lesscpy import compile
 from quart import request
 
@@ -203,7 +203,7 @@ class Minify:
                 if self.remove_debugger:
                     js_code = re.sub(r'\bdebugger\s*;?\s*', '', js_code)
 
-                minifed = jsmin(js_code)
+                minifed = rjsmin.jsmin(js_code)
 
             if self.cache:
                 if len(self.history) >= self.cache_limit:

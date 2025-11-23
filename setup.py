@@ -6,7 +6,7 @@ with open("README.md") as readme_file:
 
 setuptools.setup(
     name="quart-minify",
-    version="0.5.1",
+    version="0.5.2",
     author="Jethro Muller",
     author_email="git@jethromuller.co.za",
     description="Quart extension to minify HTML, CSS, JS, and less",
@@ -34,7 +34,7 @@ setuptools.setup(
     ],
     install_requires=[
         "htmlmin>=0.1.12",
-        "jsmin>=3.0",
+        "rjsmin>=1.2.5",
         "lesscpy>=0.13.0",
         "quart>=0.10.0",
     ],
