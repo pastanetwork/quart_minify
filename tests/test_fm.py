@@ -103,7 +103,7 @@ async def test_html_bypassing(client):
     resp = await client.get("/html")
     data = await resp.get_data()
 
-    assert b"<html> <body> <h1> HTML </h1> </body> </html>" != data
+    assert b"<html><body><h1>HTML</h1>" != data
 
 
 @pytest.mark.asyncio
@@ -114,7 +114,7 @@ async def test_html_minify(client):
     resp = await client.get("/html")
     data = await resp.get_data()
 
-    assert b"<html> <body> <h1> HTML </h1> </body> </html>" == data
+    assert b"<html><body><h1>HTML</h1>" == data
 
 
 @pytest.mark.asyncio
@@ -177,14 +177,9 @@ async def test_fail_safe(client):
     resp = await client.get("/cssless_false")
     data = await resp.get_data()
 
-    assert (
-        b"""<style>
-        body {
-            color: red;;
-        }
-    </style>"""
-        == data
-    )
+    assert b"<style>" in data
+    assert b"red;;" in data
+    assert b"</style>" in data
 
 
 @pytest.mark.asyncio

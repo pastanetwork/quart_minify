@@ -138,10 +138,10 @@ Minify(
 ## Credit:
 Adapted from [flask_minify](https://github.com/mrf345/flask_minify)
 
-- [htmlmin][1322354e]: HTML python minifier.
+- [minify-html][1322354e]: HTML python minifier.
 - [lesscpy][1322353e]: Python less compiler and css minifier.
 - [jsmin][1322355e]: JavaScript python minifier.
 
 [1322353e]: https://github.com/lesscpy/lesscpy "lesscpy repo"
-[1322354e]: https://github.com/mankyd/htmlmin "htmlmin repo"
+[1322354e]: https://github.com/wilsonzlin/minify-html "minify-html repo"
 [1322355e]: https://github.com/tikitu/jsmin "jsmin repo"

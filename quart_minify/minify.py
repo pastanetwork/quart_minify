@@ -3,7 +3,7 @@ from io import StringIO
 import re
 from collections import OrderedDict
 
-from htmlmin import minify as minify_html
+import minify_html_onepass
 import rjsmin
 from lesscpy import compile
 from quart import request
@@ -333,7 +333,7 @@ class Minify:
             if self.js:
                 text = self._find_and_minify_tags(text, "script", False)
 
-            final_resp = minify_html(text, remove_comments=True) if self.html else text
+            final_resp = minify_html_onepass.minify(text, minify_js=False, minify_css=False) if self.html else text
             response.set_data(final_resp)
 
         return response
