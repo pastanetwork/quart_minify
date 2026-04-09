@@ -1,3 +1,4 @@
+import asyncio
 from hashlib import md5
 from io import StringIO
 import re
@@ -325,7 +326,8 @@ class Minify:
             and (request.url_rule is None or request.url_rule.rule not in self.bypass)
         ):
             response.direct_passthrough = False
-            text = response.get_data(as_text=True)
+            result = response.get_data(as_text=True)
+            text = (await result) if asyncio.iscoroutine(result) else result
 
             if self.cssless:
                 text = self._find_and_minify_tags(text, "style", True)
