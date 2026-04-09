@@ -325,7 +325,7 @@ class Minify:
             and (request.url_rule is None or request.url_rule.rule not in self.bypass)
         ):
             response.direct_passthrough = False
-            text = await response.get_data(as_text=True)
+            text = response.get_data(as_text=True)
 
             if self.cssless:
                 text = self._find_and_minify_tags(text, "style", True)
