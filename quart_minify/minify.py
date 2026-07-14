@@ -299,7 +299,7 @@ class Minify:
         """
         import re
 
-        pattern = rf'<{tag}(?:\s+[^>]*)?>(.+?)<\/{tag}>'
+        pattern = rf'<{tag}(?:\s+[^>]*)?>(.*?)<\/{tag}>'
 
         def replace_tag_content(match):
             """Replace the content of a single tag with its minified version"""

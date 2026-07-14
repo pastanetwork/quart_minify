@@ -1140,3 +1140,36 @@ async def test_console_with_object_methods():
     assert b'method2' in data
     assert b'method3' in data
     assert b'return true' in data or b'return' in data
+
+
+@pytest.mark.asyncio
+async def test_empty_external_script_no_overcapture():
+    """ Regression: un script externe au corps vide (<script src=...></script>) ne doit pas
+        capturer le HTML jusqu'au </script> suivant et le passer a rjsmin. """
+    test_app = Quart(__name__)
+
+    @test_app.route("/empty_script")
+    def empty_script():
+        return (
+            "<html><head>"
+            "<script src=\"/static/app.js\"></script>"
+            "</head><body>"
+            "<a :href=\"url\" target=\"_blank\" class=\"link\">go</a>"
+            "<script>var x = 1;</script>"
+            "</body></html>"
+        )
+
+    Minify(app=test_app, html=True, js=True, cssless=True, cache=False)
+
+    test_client = test_app.test_client()
+    resp = await test_client.get("/empty_script")
+    assert resp.status_code == 200
+    data = await resp.get_data()
+
+    # Le binding Alpine ne doit pas etre corrompu en <a:href par un rjsmin errone
+    assert b"<a:href" not in data
+    assert b":href" in data
+    # Le src externe est preserve
+    assert b"/static/app.js" in data
+    # Le vrai script inline est bien minifie
+    assert b"var x=1" in data
