@@ -64,7 +64,8 @@ def __init__(self,
   remove_console=False,
   console_types=('log', 'warn', 'error'),
   remove_debugger=False,
-  cache_limit=100):
+  cache_limit=100,
+  logger=None):
   """
     A Quart extension to minify flask response for html,
     javascript, css and less.
@@ -78,6 +79,8 @@ def __init__(self,
     @param: console_types Tuple of console types to remove: 'log', 'warn', 'error' (default: ('log', 'warn', 'error')).
     @param: remove_debugger Remove debugger statements from JavaScript (default: False).
     @param: cache_limit Maximum number of items to keep in cache, uses LRU eviction (default: 100).
+    @param: logger Optional logger-like object; when set, every response degraded by fail_safe
+      is reported with logger.warning along with the request path (default: None).
     Notice: bypass route should be identical to the url_rule used for example:
     bypass=['/user/<int:user_id>', '/users']
   """

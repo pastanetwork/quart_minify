@@ -1,6 +1,7 @@
 import pytest
+from lesscpy.exceptions import CompilationError
 from pytest import fixture
-from quart import Quart
+from quart import Quart, Response
 from quart_minify.minify import Minify
 
 app = Quart(__name__)
@@ -186,10 +187,9 @@ async def test_fail_safe(client):
 async def test_fail_safe_false_input(client):
     """testing fail safe disabled with false input """
     Minify(app=app, fail_safe=False, cache=False)
-    try:
+
+    with pytest.raises(CompilationError):
         await client.get("/cssless_false")
-    except Exception as e:
-        assert "CompilationError" == e.__class__.__name__
 
 
 @pytest.mark.asyncio
@@ -1173,3 +1173,184 @@ async def test_empty_external_script_no_overcapture():
     assert b"/static/app.js" in data
     # Le vrai script inline est bien minifie
     assert b"var x=1" in data
+
+
+# Markup que le navigateur tolere mais que minify_html_onepass refuse
+# (SyntaxError: closing tag name does not match opening tag).
+MALFORMED_HTML = """<html>
+    <head>
+        <style>
+            body { color: red; }
+        </style>
+    </head>
+    <body>
+        <div>unclosed div
+    </body>
+</html>"""
+
+
+def _malformed_app(**minify_kwargs):
+    """ App servant un balisage rejete par minify_html_onepass """
+    test_app = Quart(__name__)
+    test_app.config["TESTING"] = True
+
+    @test_app.route("/malformed_html")
+    def malformed_html():
+        return MALFORMED_HTML
+
+    Minify(app=test_app, html=True, cssless=True, js=False, cache=False, **minify_kwargs)
+
+    return test_app
+
+
+@pytest.mark.asyncio
+async def test_html_pass_fail_safe():
+    """ fail_safe=True doit aussi couvrir la passe HTML, pas seulement les balises """
+    test_app = _malformed_app(fail_safe=True)
+
+    resp = await test_app.test_client().get("/malformed_html")
+    data = await resp.get_data()
+
+    # Pas de 500: la page sort telle que le gabarit l'a produite
+    assert resp.status_code == 200
+    assert b"unclosed div" in data
+    # La passe HTML est abandonnee: l'indentation d'origine est intacte
+    assert b"    </body>" in data
+    # Mais le travail deja fait par la passe CSS est conserve
+    assert b"<style>body{color:red;}</style>" in data
+
+
+@pytest.mark.asyncio
+async def test_html_pass_fail_safe_false_raises():
+    """ fail_safe=False garde son role de diagnostic: l'erreur remonte """
+    test_app = _malformed_app(fail_safe=False)
+
+    with pytest.raises(SyntaxError):
+        await test_app.test_client().get("/malformed_html")
+
+
+@pytest.mark.asyncio
+async def test_html_pass_fail_safe_logs_with_logger():
+    """ le logger optionnel rend la degradation observable """
+
+    class RecordingLogger:
+        def __init__(self):
+            self.warnings = []
+
+        def warning(self, message, *args):
+            self.warnings.append(message % args)
+
+    logger = RecordingLogger()
+    test_app = _malformed_app(fail_safe=True, logger=logger)
+
+    resp = await test_app.test_client().get("/malformed_html")
+
+    assert resp.status_code == 200
+    assert len(logger.warnings) == 1
+    assert "/malformed_html" in logger.warnings[0]
+    assert "SyntaxError" in logger.warnings[0]
+
+
+@pytest.mark.asyncio
+async def test_html_pass_fail_safe_silent_without_logger():
+    """ sans logger, la degradation reste silencieuse (comportement par defaut) """
+    test_app = _malformed_app(fail_safe=True)
+
+    resp = await test_app.test_client().get("/malformed_html")
+
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_broken_logger_never_breaks_the_response():
+    """ un logger defaillant ne doit pas provoquer ce que fail_safe vient d'eviter """
+
+    class BrokenLogger:
+        def warning(self, message, *args):
+            raise RuntimeError("logger is down")
+
+    test_app = _malformed_app(fail_safe=True, logger=BrokenLogger())
+
+    resp = await test_app.test_client().get("/malformed_html")
+    data = await resp.get_data()
+
+    assert resp.status_code == 200
+    assert b"unclosed div" in data
+
+
+def _undecodable_app(**minify_kwargs):
+    """ App servant un corps annonce en utf-8 mais indecodable: get_data leve """
+    test_app = Quart(__name__)
+    test_app.config["TESTING"] = True
+
+    @test_app.route("/undecodable")
+    def undecodable():
+        return Response(
+            b"\xff\xfe<html><body>x</body></html>",
+            content_type="text/html; charset=utf-8",
+        )
+
+    Minify(app=test_app, cache=False, **minify_kwargs)
+
+    return test_app
+
+
+@pytest.mark.asyncio
+async def test_body_read_failure_fail_safe():
+    """ fail_safe couvre la methode entiere, pas seulement la passe HTML """
+    test_app = _undecodable_app(fail_safe=True)
+
+    resp = await test_app.test_client().get("/undecodable")
+    data = await resp.get_data()
+
+    assert resp.status_code == 200
+    assert data == b"\xff\xfe<html><body>x</body></html>"
+
+
+@pytest.mark.asyncio
+async def test_body_read_failure_fail_safe_false_raises():
+    """ meme chemin, mais fail_safe=False laisse remonter l'erreur """
+    test_app = _undecodable_app(fail_safe=False)
+
+    with pytest.raises(UnicodeDecodeError):
+        await test_app.test_client().get("/undecodable")
+
+
+def test_log_degraded_outside_request_context():
+    """ le logger ne doit pas dependre d'un contexte de requete """
+
+    class RecordingLogger:
+        def __init__(self):
+            self.warnings = []
+
+        def warning(self, message, *args):
+            self.warnings.append(message % args)
+
+    logger = RecordingLogger()
+    minifier = Minify(logger=logger)
+    minifier._log_degraded("html", ValueError("boom"))
+
+    assert "<unknown>" in logger.warnings[-1]
+
+
+@pytest.mark.asyncio
+async def test_valid_html_unaffected_by_fail_safe_guard():
+    """ la garde ne change rien quand la minification reussit """
+    test_app = Quart(__name__)
+
+    @test_app.route("/valid_html")
+    def valid_html():
+        return """<html>
+            <body>
+                <h1>
+                    HTML
+                </h1>
+            </body>
+        </html>"""
+
+    Minify(app=test_app, html=True, cssless=False, js=False, cache=False)
+
+    resp = await test_app.test_client().get("/valid_html")
+    data = await resp.get_data()
+
+    assert data == b"<html><body><h1>HTML</h1>"

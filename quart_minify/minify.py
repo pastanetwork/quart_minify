@@ -23,7 +23,8 @@ class Minify:
         remove_console=False,
         console_types=('log', 'warn', 'error'),
         remove_debugger=False,
-        cache_limit=100
+        cache_limit=100,
+        logger=None
     ):
         """
         A Quart extension to minify flask response for html,
@@ -38,6 +39,9 @@ class Minify:
         @param: console_types Tuple of console types to remove: 'log', 'warn', 'error' (default: ('log', 'warn', 'error'))
         @param: remove_debugger Remove debugger statements from JavaScript (default: False)
         @param: cache_limit Maximum number of items to keep in cache (default: 100)
+        @param: logger Optional logger-like object; when set, every response
+            degraded by fail_safe is reported with `logger.warning` along with
+            the request path (default: None, meaning silent degradation)
         """
         self.app = app
         self.html = html
@@ -50,6 +54,7 @@ class Minify:
         self.console_types = console_types
         self.remove_debugger = remove_debugger
         self.cache_limit = cache_limit
+        self.logger = logger
         # Use OrderedDict for LRU cache implementation
         self.history = OrderedDict()  # where cache hash and compiled response stored
         self.hashes = OrderedDict()  # where the hashes and text will be stored
@@ -320,22 +325,66 @@ class Minify:
 
         return re.sub(pattern, replace_tag_content, text, flags=re.DOTALL)
 
+    def _log_degraded(self, stage, error):
+        """
+        Report a response that fail_safe kept from raising.
+        Never raises: a broken logger must not do what fail_safe just prevented.
+        @param: stage Which pass gave up ('html' or 'response')
+        @param: error The exception that was swallowed
+        """
+        if self.logger is None:
+            return
+
+        try:
+            path = request.path
+        except Exception:
+            path = "<unknown>"
+
+        try:
+            self.logger.warning(
+                "quart_minify: %s minification failed for %s, serving it unminified (%s: %s)",
+                stage, path, type(error).__name__, error,
+            )
+        except Exception:
+            pass
+
+    def _minify_html(self, text):
+        """
+        Run the whole-document pass, honouring fail_safe like the tag passes do.
+        @param: text The HTML text already processed by the style/script passes
+        @return: The minified document, or text unchanged when fail_safe absorbs a failure
+        """
+        try:
+            return minify_html_onepass.minify(text, minify_js=False, minify_css=False)
+        except Exception as e:
+            if not self.fail_safe:
+                raise
+            # Keep the style/script passes' work: only the document pass is dropped
+            self._log_degraded("html", e)
+            return text
+
     async def to_loop_tag(self, response):
         if (
             response.content_type == "text/html; charset=utf-8"
             and (request.url_rule is None or request.url_rule.rule not in self.bypass)
         ):
-            response.direct_passthrough = False
-            result = response.get_data(as_text=True)
-            text = (await result) if asyncio.iscoroutine(result) else result
+            try:
+                response.direct_passthrough = False
+                result = response.get_data(as_text=True)
+                text = (await result) if asyncio.iscoroutine(result) else result
 
-            if self.cssless:
-                text = self._find_and_minify_tags(text, "style", True)
+                if self.cssless:
+                    text = self._find_and_minify_tags(text, "style", True)
 
-            if self.js:
-                text = self._find_and_minify_tags(text, "script", False)
+                if self.js:
+                    text = self._find_and_minify_tags(text, "script", False)
 
-            final_resp = minify_html_onepass.minify(text, minify_js=False, minify_css=False) if self.html else text
-            response.set_data(final_resp)
+                final_resp = self._minify_html(text) if self.html else text
+                response.set_data(final_resp)
+            except Exception as e:
+                if not self.fail_safe:
+                    raise
+                # Reading or writing the body failed: leave the response untouched
+                self._log_degraded("response", e)
 
         return response
